@@ -63,10 +63,10 @@ bool Board::checkWinner(char color, bool visited[MAX_SIZE][MAX_SIZE], Point poin
     if (visited[point.x][point.y])
         return false;
 
-    visited[point.x][point.y] = true;
-
     if (fields[point.x][point.y] != color)
         return false;
+
+    visited[point.x][point.y] = true;
 
     if (color == 'r' && point.y == size - 1)
         return true;
@@ -74,15 +74,15 @@ bool Board::checkWinner(char color, bool visited[MAX_SIZE][MAX_SIZE], Point poin
     if (color == 'b' && point.x == size - 1)
         return true;
 
-    char x = point.x > 0 ? point.x - 1 : 0,
-        y = point.y > 0 ? point.y - 1 : 0;
-
-    for (; x <= point.x + 1 && x < size; x++) {
-        for (; y <= point.y + 1 && y < size; y++) {
-            if (x == y)
+    for (char x = -1; x <= 1; x++) {
+        for (char y = -1; y <= 1; y++) {
+            if (x+y == 0)
                 continue;
-
-            if (checkWinner(color, visited, Point(x, y)))
+            if (point.x + x < 0 || point.y + y < 0)
+                continue;
+            if (point.x + x > size || point.y + y > size)
+                continue;
+            if (checkWinner(color, visited, Point(point.x + x, point.y + y)))
                 return true;
         }
     }
@@ -104,11 +104,13 @@ bool* Board::isGameOver() {
     }
 
     for (char i = 0; i < size; i++) {
-        if (checkWinner('r', visited, Point(i,0))) {
+        if (checkWinner('r', visited, Point(i, 0))) {
             win[0] = true;
             win[1] = RED;
             return win;
         }
+    }
+    for (char i = 0; i < size; i++) {
         if (checkWinner('b', visited, Point(0, i))) {
             win[0] = true;
             win[1] = BLUE;
@@ -136,11 +138,11 @@ void Board::readCommand(const std::string& command) {
         std::cout << boolToYesNo(isCorrect());
     else if (command == COMM_OVER) {
         bool* res = isGameOver();
-        std::cout << boolToYesNo(res[0]) << " " << (res[0] ? boolToColor(res[1]) : "");
+        std::cout << boolToYesNo(res[0]) << (res[0] ? " " + boolToColor(res[1]) : "");
         delete[] res;
     }
 
     std::cout << "\n";
 }
 
-Point::Point(char x, char y) : x(x), y(x) {}
+Point::Point(char x, char y) : x(x), y(y) {}

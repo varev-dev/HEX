@@ -10,16 +10,24 @@
 
 #define MAX_SIZE 11
 
-typedef enum Colors {
+typedef enum Color {
     RED = 0,
     BLUE
-} Colors;
+} Color;
+
+typedef struct Point {
+    char x, y;
+    Point(char x, char y);
+} Point;
 
 typedef struct Board {
 private:
     char currentRow;
     bool isCorrect();
+    bool checkWinner(char color, bool visited[MAX_SIZE][MAX_SIZE], Point point);
     bool* isGameOver();
+    static std::string boolToYesNo(bool value);
+    static std::string boolToColor(bool color);
 public:
     char fields[MAX_SIZE][MAX_SIZE];
     char pawns_counter[2];

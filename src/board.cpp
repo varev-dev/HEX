@@ -56,22 +56,91 @@ bool Board::isCorrect() {
     return diff == 0 || diff == 1;
 }
 
+/**
+ * @todo BLUE dfs not working well, check connectivity
+ */
+bool Board::checkWinner(char color, bool visited[MAX_SIZE][MAX_SIZE], Point point) {
+    if (visited[point.x][point.y])
+        return false;
+
+    visited[point.x][point.y] = true;
+
+    if (fields[point.x][point.y] != color)
+        return false;
+
+    if (color == 'r' && point.y == size - 1)
+        return true;
+
+    if (color == 'b' && point.x == size - 1)
+        return true;
+
+    char x = point.x > 0 ? point.x - 1 : 0,
+        y = point.y > 0 ? point.y - 1 : 0;
+
+    for (; x <= point.x + 1 && x < size; x++) {
+        for (; y <= point.y + 1 && y < size; y++) {
+            if (x == y)
+                continue;
+
+            if (checkWinner(color, visited, Point(x, y)))
+                return true;
+        }
+    }
+
+    return false;
+}
+
 bool* Board::isGameOver() {
     bool* win = new bool[2]{false, false};
+    bool visited[MAX_SIZE][MAX_SIZE];
 
-    if (pawns_counter[RED] < size)
+    if (!isCorrect())
         return win;
+
+    for (char i = 0; i < size; i++) {
+        for (char j = 0; j < size; j++) {
+            visited[i][j] = false;
+        }
+    }
+
+    for (char i = 0; i < size; i++) {
+        if (checkWinner('r', visited, Point(i,0))) {
+            win[0] = true;
+            win[1] = RED;
+            return win;
+        }
+        if (checkWinner('b', visited, Point(0, i))) {
+            win[0] = true;
+            win[1] = BLUE;
+            return win;
+        }
+    }
 
     return win;
 }
 
+std::string Board::boolToYesNo(bool value) {
+    return value ? "YES" : "NO";
+}
+
+std::string Board::boolToColor(bool color) {
+    return color ? "BLUE" : "RED";
+}
+
 void Board::readCommand(const std::string& command) {
     if (command == COMM_SIZE)
-        std::cout << (int) size << "\n";
+        std::cout << (int) size;
     else if (command == COMM_PAWN)
-        std::cout << pawns_counter[RED] + pawns_counter[BLUE] << "\n";
+        std::cout << pawns_counter[RED] + pawns_counter[BLUE];
     else if (command == COMM_CORR)
-        std::cout << (isCorrect() ? "YES" : "NO") << "\n";
-    else if (command == COMM_OVER)
-        std::cout << "";
+        std::cout << boolToYesNo(isCorrect());
+    else if (command == COMM_OVER) {
+        bool* res = isGameOver();
+        std::cout << boolToYesNo(res[0]) << " " << (res[0] ? boolToColor(res[1]) : "");
+        delete[] res;
+    }
+
+    std::cout << "\n";
 }
+
+Point::Point(char x, char y) : x(x), y(x) {}

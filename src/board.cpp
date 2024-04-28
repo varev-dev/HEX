@@ -8,6 +8,9 @@
 #define COMM_PAWN std::string("PAWNS_NUMBER")
 #define COMM_CORR std::string("IS_BOARD_CORRECT")
 #define COMM_OVER std::string("IS_GAME_OVER")
+#define COMM_POSS std::string("IS_BOARD_POSSIBLE")
+
+Point::Point(char x, char y) : x(x), y(y) {}
 
 Board::Board() {
     for (auto & row : fields) {
@@ -57,7 +60,7 @@ bool Board::isCorrect() {
 }
 
 /**
- * @todo BLUE dfs not working well, check connectivity
+ * @todo fix cases where blue should win and red wins
  */
 bool Board::checkWinner(char color, bool visited[MAX_SIZE][MAX_SIZE], Point point) {
     if (visited[point.x][point.y])
@@ -70,7 +73,6 @@ bool Board::checkWinner(char color, bool visited[MAX_SIZE][MAX_SIZE], Point poin
 
     if (color == 'r' && point.y == size - 1)
         return true;
-
     if (color == 'b' && point.x == size - 1)
         return true;
 
@@ -80,7 +82,7 @@ bool Board::checkWinner(char color, bool visited[MAX_SIZE][MAX_SIZE], Point poin
                 continue;
             if (point.x + x < 0 || point.y + y < 0)
                 continue;
-            if (point.x + x > size || point.y + y > size)
+            if (point.x + x >= size || point.y + y >= size)
                 continue;
             if (checkWinner(color, visited, Point(point.x + x, point.y + y)))
                 return true;
@@ -109,8 +111,6 @@ bool* Board::isGameOver() {
             win[1] = RED;
             return win;
         }
-    }
-    for (char i = 0; i < size; i++) {
         if (checkWinner('b', visited, Point(0, i))) {
             win[0] = true;
             win[1] = BLUE;
@@ -145,4 +145,12 @@ void Board::readCommand(const std::string& command) {
     std::cout << "\n";
 }
 
-Point::Point(char x, char y) : x(x), y(y) {}
+void Board::printBoard() const {
+    for (char i = 0; i < size; i++) {
+        for (char j = 0; j < size; j++) {
+            std::cout << fields[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+

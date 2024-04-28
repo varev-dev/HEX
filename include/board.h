@@ -38,6 +38,7 @@ public:
     void setSize(const std::string& firstLine);
     void readFields();
     void readCommand(const std::string &command);
+    void printBoard() const;
 } Hex;
 
 #endif //HEX_BOARD_H

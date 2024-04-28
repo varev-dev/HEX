@@ -22,6 +22,14 @@ Board::Board() {
     currentRow = 0, size = 0, isFilled = false;
 }
 
+Board::~Board() {
+    while (!empty.empty()) {
+        Point* p = empty.back();
+        empty.pop_back();
+        delete p;
+    }
+}
+
 void Board::setSize(const std::string& firstLine) {
     this->size = (char) ((firstLine.size() - 1) / 3);
     pawns_counter[RED] = 0, pawns_counter[BLUE] = 0;
@@ -45,6 +53,7 @@ void Board::readFields() {
             fields[row][col] = input[i];
             if (fields[row][col] == 'r') pawns_counter[RED]++;
             else if (fields[row][col] == 'b') pawns_counter[BLUE]++;
+            else empty.push_back(new Point(row, col));
             row--;
             col++;
         }
@@ -59,9 +68,6 @@ bool Board::isCorrect() {
     return diff == 0 || diff == 1;
 }
 
-/**
- * @todo fix cases where blue should win and red wins
- */
 bool Board::checkWinner(char color, bool visited[MAX_SIZE][MAX_SIZE], Point point) {
     if (visited[point.x][point.y])
         return false;
@@ -92,11 +98,11 @@ bool Board::checkWinner(char color, bool visited[MAX_SIZE][MAX_SIZE], Point poin
     return false;
 }
 
-bool* Board::isGameOver() {
+bool* Board::isGameOver(bool checkIsCorrect) {
     bool* win = new bool[2]{false, false};
     bool visited[MAX_SIZE][MAX_SIZE];
 
-    if (!isCorrect())
+    if (checkIsCorrect && !isCorrect())
         return win;
 
     for (char i = 0; i < size; i++) {
@@ -142,12 +148,16 @@ void Board::readCommand(const std::string& command) {
         bool* res = isGameOver();
         std::cout << boolToYesNo(res[0]) << (res[0] ? " " + boolToColor(res[1]) : "");
         delete[] res;
+    } else if (command.find("NAIVE") != std::string::npos) {
+        char color = command.find("RED") ? 'r' : 'b';
+        char moves = command.find("ONE") ? 1 : 2;
+        std::cout << boolToYesNo(simulate(color, moves, NAIVE));
     }
 
     std::cout << "\n";
 }
 
-bool Board::checkIsPawnPathPossible(char color) {
+bool Board::checkIsPawnPathPossible(char color, bool isCorrect) {
     for (char i = 0; i < size; i++) {
         for (char j = 0; j < size; j++) {
             if (fields[i][j] != color)
@@ -155,7 +165,7 @@ bool Board::checkIsPawnPathPossible(char color) {
 
             fields[i][j] = ' ';
 
-            bool* go = isGameOver();
+            bool* go = isGameOver(isCorrect);
             bool win = go[0];
             delete go;
 
@@ -187,6 +197,43 @@ bool Board::isBoardPossible() {
 
     delete winner;
     return output;
+}
+
+bool Board::simulate(char color, char moves, Type type) {
+    if (!isCorrect() || isGameOver(false)[0])
+        return false;
+
+    if (pawns_counter[color == 'b'] + moves < size)
+        return false;
+
+    int opponent = 0;
+    if (color == 'r') opponent = pawns_counter[RED] != pawns_counter[BLUE];
+    else opponent = pawns_counter[RED] == pawns_counter[BLUE];
+
+    if (moves > 1)
+        opponent += moves-1;
+
+    if (empty.size() >= opponent + moves)
+        return false;
+
+    for (int i = 0; i < empty.size(); i++) {
+        Point* p1 = empty[i];
+        fields[p1->x][p1->y] = color;
+        for (int j = 0; j < empty.size(); i++) {
+            if (i == j)
+                continue;
+
+            Point* p2 = empty[j];
+            fields[p2->x][p2->y] = color;
+
+            if (checkIsPawnPathPossible(color, false))
+                return true;
+            fields[p2->x][p2->y] = ' ';
+        }
+        fields[p1->x][p1->y] = ' ';
+    }
+
+    return false;
 }
 
 void Board::printBoard() const {

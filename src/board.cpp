@@ -136,6 +136,8 @@ void Board::readCommand(const std::string& command) {
         std::cout << pawns_counter[RED] + pawns_counter[BLUE];
     else if (command == COMM_CORR)
         std::cout << boolToYesNo(isCorrect());
+    else if (command == COMM_POSS)
+        std::cout << boolToYesNo(isBoardPossible());
     else if (command == COMM_OVER) {
         bool* res = isGameOver();
         std::cout << boolToYesNo(res[0]) << (res[0] ? " " + boolToColor(res[1]) : "");
@@ -143,6 +145,48 @@ void Board::readCommand(const std::string& command) {
     }
 
     std::cout << "\n";
+}
+
+bool Board::checkIsPawnPathPossible(char color) {
+    for (char i = 0; i < size; i++) {
+        for (char j = 0; j < size; j++) {
+            if (fields[i][j] != color)
+                continue;
+
+            fields[i][j] = ' ';
+
+            bool* go = isGameOver();
+            bool win = go[0];
+            delete go;
+
+            fields[i][j] = color;
+
+            if (!win)
+                return true;
+        }
+    }
+    return false;
+}
+
+bool Board::isBoardPossible() {
+    if (!isCorrect())
+        return false;
+
+    bool* winner = isGameOver();
+    bool output = false;
+
+    if (!winner[0]) {
+        output = true;
+    } else if (winner[1] == RED) {
+        if (pawns_counter[RED] - pawns_counter[BLUE] != 1) output = false;
+        else output = checkIsPawnPathPossible('r');
+    } else if (winner[1] == BLUE) {
+        if (pawns_counter[RED] - pawns_counter[BLUE] != 0) output = false;
+        else output = checkIsPawnPathPossible('b');
+    }
+
+    delete winner;
+    return output;
 }
 
 void Board::printBoard() const {
@@ -153,4 +197,3 @@ void Board::printBoard() const {
         std::cout << std::endl;
     }
 }
-

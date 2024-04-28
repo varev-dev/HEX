@@ -26,6 +26,8 @@ private:
     bool isCorrect();
     bool checkWinner(char color, bool visited[MAX_SIZE][MAX_SIZE], Point point);
     bool* isGameOver();
+    bool isBoardPossible();
+    bool checkIsPawnPathPossible(char color);
     static std::string boolToYesNo(bool value);
     static std::string boolToColor(bool color);
 public:

@@ -11,6 +11,7 @@ int main() {
             board = new Board();
             board->setSize(input);
             board->readFields();
+            std::cout << std::endl;
             //board->printBoard();
         } else {
             board->readCommand(input);

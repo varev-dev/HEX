@@ -18,17 +18,11 @@ Board::Board() {
             field = 0;
         }
     }
-    pawns_counter[RED] = 0, pawns_counter[BLUE] = 0;
+    pawns_counter[RED] = 0, pawns_counter[BLUE] = 0, empty_size = 0;
     currentRow = 0, size = 0, isFilled = false;
 }
 
-Board::~Board() {
-    while (!empty.empty()) {
-        Point* p = empty.back();
-        empty.pop_back();
-        delete p;
-    }
-}
+Board::~Board() = default;
 
 void Board::setSize(const std::string& firstLine) {
     this->size = (char) ((firstLine.size() - 1) / 3);
@@ -53,17 +47,32 @@ void Board::readFields() {
             fields[row][col] = input[i];
             if (fields[row][col] == 'r') pawns_counter[RED]++;
             else if (fields[row][col] == 'b') pawns_counter[BLUE]++;
-            else empty.push_back(new Point(row, col));
+            else empty_size++;
             row--;
             col++;
         }
         currentRow++;
     } while (input.size() != size * 3 + 1);
 
+    char ctr = 0;
+    for (char i = 0; i < size; i++) {
+        for (char j = 0; j < size; j++) {
+            if (fields[i][j] != ' ')
+                continue;
+
+            empty[ctr] = Point(i, j);
+            ctr++;
+        }
+    }
+
     isFilled = true;
 }
 
-bool Board::isCorrect() {
+char Board::swapColor(char color) {
+    return color == 'r' ? 'b' : 'r';
+}
+
+bool Board::isCorrect() const {
     int diff = pawns_counter[RED] - pawns_counter[BLUE];
     return diff == 0 || diff == 1;
 }
@@ -148,13 +157,15 @@ void Board::readCommand(const std::string& command) {
         bool* res = isGameOver();
         std::cout << boolToYesNo(res[0]) << (res[0] ? " " + boolToColor(res[1]) : "");
         delete[] res;
-    } else if (command.find("NAIVE") != std::string::npos) {
+    } else if (command[0] == 'C'){
+        Type type = command.find("NAIVE") != std::string::npos ? NAIVE : PERFECT;
         char color = command.find("RED") != std::string::npos ? 'r' : 'b';
-        char moves = command.find("1") != std::string::npos ? 1 : 2;
-        std::cout << boolToYesNo(simulate(color, moves, NAIVE));
+        char moves = command.find('1') != std::string::npos ? 1 : 2;
+        std::cout << boolToYesNo(simulate(color, moves, type)) << "\n";
     }
 
-    std::cout << "\n";
+    if (command[0] != 'C')
+        std::cout << "\n";
 }
 
 bool Board::checkIsPawnPathPossible(char color, bool isCorrect) {
@@ -199,145 +210,82 @@ bool Board::isBoardPossible() {
     return output;
 }
 
-/*bool Board::findMoves(Point* point, char color, char moves) {
-    for (char i = 0; i < empty.size(); i++) {
-        if (fields[empty[i]->x][empty[i]->y] != ' ')
-            continue;
-
-        point[moves-1] = *empty[i];
-        fields[point->x][point->y] = color;
-
-        bool isMoveOk = isGameOver(false)[0] == (moves - 1 == 0);
-
-        if (!isMoveOk) continue;
-
-        if (moves - 1 == 0) return true;
-        if (findMoves(point, color, moves - 1)) return true;
-        else {
-            for (char j = 0; j < moves; j++) {
-
-            }
-        }
-    }
-    return false;
-}*/
-
-/*Point* Board::findMoves(char color, char moves, bool winning, bool canBlock) {
-    auto* points = (Point *) (malloc(moves * sizeof(Point)));
-    if (moves < 1)
-        return nullptr;
-
-    for (char i = 0; i < moves; i++) {
-        Point* p = findSingleMove(color, i + 1 == moves, canBlock);
-        if (p) points[i] = *p;
-        free(p);
-    }
-
-    return nullptr;
-}*/
-
 bool Board::findMove(Point* points, char color, char moves) {
-    for (char i = 0; i < empty.size(); i++) {
-        if (fields[empty[i]->x][empty[i]->y] != ' ')
+    for (char i = 0; i < empty_size; i++) {
+        if (fields[empty[i].x][empty[i].y] != ' ')
             continue;
 
-        fields[empty[i]->x][empty[i]->y] = color;
+        fields[empty[i].x][empty[i].y] = color;
         bool* win = isGameOver(false);
 
         bool over = win[0];
         delete win;
 
         if (over && !moves) {
-            points[moves] = *empty[i];
+            points[moves] = empty[i];
             return true;
+        }
+
+        if (over) {
+            fields[empty[i].x][empty[i].y] = ' ';
+            continue;
         }
 
         if (moves && findMove(points, color, moves - 1)) {
-            points[moves] = *empty[i];
+            points[moves] = empty[i];
             return true;
         }
 
-        fields[empty[i]->x][empty[i]->y] = ' ';
+        fields[empty[i].x][empty[i].y] = ' ';
     }
 
     return false;
 }
 
+
 bool Board::simulate(char color, char moves, Type type) {
     bool* win = isGameOver(false);
-    if (!isCorrect() || win[0])
-        return false;
+    bool gameOver = win[0];
     delete win;
 
-    if (pawns_counter[color == 'b'] + moves < size)
+    if (!isCorrect() || gameOver)
+        return false;
+
+    if (pawns_counter[color == 'b'] + moves < size || moves > size*size)
         return false;
 
     int opponent;
     if (color == 'r') opponent = pawns_counter[RED] != pawns_counter[BLUE];
     else opponent = pawns_counter[RED] == pawns_counter[BLUE];
 
-    if (moves > 1)
-        opponent += moves-1;
+    opponent += moves-1;
 
-    if (empty.size() < opponent + moves)
+    if (empty_size < opponent + moves)
         return false;
 
     if (type == NAIVE) {
         auto* points = new Point[moves];
         bool output = findMove(points, color, moves - 1);
-        for (int i = 0; i < moves; i++) {
-            fields[points[i].x][points[i].y] = ' ';
-        }
-        delete[] points;
-        return output;
-    }
 
-//    if (moves == 1) {
-//        if (type == NAIVE) {
-//            auto* points = new Point[moves];
-//            return findMove(points, color, moves - 1);
-//        }
-//    } else if (moves == 2) {
-//        if (type == NAIVE) {
-//            for (char i = 0; i < empty.size(); i++) {
-//                fields[empty[i]->x][empty[i]->y] = color;
-//                win = isGameOver(false);
-//                bool over = win[0];
-//                delete win;
-//
-//                if (over) {
-//                    fields[empty[i]->x][empty[i]->y] = ' ';
-//                    continue;
-//                }
-//
-//                for (char j = 0; j < empty.size(); j++) {
-//                    if (i == j)
-//                        continue;
-//
-//                    fields[empty[j]->x][empty[j]->y] = color;
-//                    win = isGameOver(false);
-//                    over = win[0];
-//                    delete win;
-//                    fields[empty[j]->x][empty[j]->y] = ' ';
-//
-//                    if (over) {
-//                        fields[empty[i]->x][empty[i]->y] = ' ';
-//                        return true;
-//                    }
-//                }
-//                fields[empty[i]->x][empty[i]->y] = ' ';
-//            }
-//        }
-//    }
+        for (int i = 0; i < moves; i++) fields[points[i].x][points[i].y] = ' ';
+        delete[] points;
+
+        return output;
+    } else {
+        auto** winnable_paths = new Point*[opponent + 1];
+        winnable_paths[0] = new Point[moves];
+        char winnable_ctr = 0;
+
+        if (findMove(winnable_paths[0], swapColor(color), 0)) {
+            fields[(*winnable_paths)[0].x][(*winnable_paths)[0].y] = ' ';
+            delete[] winnable_paths[0];
+            delete[] winnable_paths;
+        }
+
+        while (winnable_ctr < opponent) {
+            winnable_ctr++;
+        }
+    }
 
     return false;
-}
-
-void Board::printBoard() const {
-    for (char i = 0; i < size; i++) {
-        for (char j = 0; j < size; j++) {
-            std::cout << fields[i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
 }

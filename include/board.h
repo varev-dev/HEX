@@ -7,7 +7,6 @@
 
 #include <cinttypes>
 #include <string>
-#include <vector>
 
 #define MAX_SIZE 11
 
@@ -30,18 +29,20 @@ typedef enum SimulationType {
 typedef struct Board {
 private:
     char currentRow;
-    bool isCorrect();
+    bool isCorrect() const;
     bool checkWinner(char color, bool visited[MAX_SIZE][MAX_SIZE], Point point);
     bool* isGameOver(bool checkIsCorrect = true);
     bool isBoardPossible();
     bool checkIsPawnPathPossible(char color, bool isCorrect = true);
     bool findMove(Point* points, char color, char moves);
     bool simulate(char color, char moves, Type type);
+    char swapColor(char color);
     static std::string boolToYesNo(bool value);
     static std::string boolToColor(bool color);
 public:
     char fields[MAX_SIZE][MAX_SIZE];
-    std::vector<Point*> empty;
+    Point empty[MAX_SIZE*MAX_SIZE];
+    char empty_size;
     char pawns_counter[2];
     char size;
     bool isFilled;
@@ -51,7 +52,6 @@ public:
     void setSize(const std::string& firstLine);
     void readFields();
     void readCommand(const std::string &command);
-    void printBoard() const;
 } Hex;
 
 #endif //HEX_BOARD_H

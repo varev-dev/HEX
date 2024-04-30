@@ -35,7 +35,7 @@ private:
     bool* isGameOver(bool checkIsCorrect = true);
     bool isBoardPossible();
     bool checkIsPawnPathPossible(char color, bool isCorrect = true);
-    //bool findMoves(Point* point, char color, char moves);
+    bool findMove(Point* points, char color, char moves);
     bool simulate(char color, char moves, Type type);
     static std::string boolToYesNo(bool value);
     static std::string boolToColor(bool color);

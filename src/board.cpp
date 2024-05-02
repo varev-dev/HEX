@@ -259,24 +259,28 @@ bool Board::reactMove(char color, char moves, char opponent) {
         bool win = predictMove(color, moves-1, opponent);
         fields[empty[i].x][empty[i].y] = ' ';
 
-        if (win)
-            return true;
+        if (win) return true;
     }
 
     return false;
 }
 
 bool Board::predictMove(char color, char moves, char opponent) {
-    auto* points = new Point[opponent], * bp = new Point[opponent];
     bool winnable;
 
     if (opponent == 1) {
+        auto* points = new Point[opponent], * bp = new Point[opponent];
+
         if (findMove(points, swapColor(color), opponent -1)) {
             fields[points[0].x][points[0].y] = ' ';
+            delete[] points;
+            delete[] bp;
             return false;
         }
 
         if (!findMove(points, color, moves - 1)) {
+            delete[] points;
+            delete[] bp;
             return false;
         }
 
@@ -286,8 +290,13 @@ bool Board::predictMove(char color, char moves, char opponent) {
 
         if (winnable) {
             fields[bp[0].x][bp[0].y] = ' ';
+            delete[] points;
+            delete[] bp;
             return true;
         }
+
+        delete[] points;
+        delete[] bp;
         return false;
     }
 

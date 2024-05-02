@@ -35,8 +35,10 @@ private:
     bool isBoardPossible();
     bool checkIsPawnPathPossible(char color, bool isCorrect = true);
     bool findMove(Point* points, char color, char moves);
+    bool reactMove(char color, char moves, char opponent);
+    bool predictMove(char color, char moves, char opponent);
     bool simulate(char color, char moves, Type type);
-    char swapColor(char color);
+    static char swapColor(char color);
     static std::string boolToYesNo(bool value);
     static std::string boolToColor(bool color);
 public:

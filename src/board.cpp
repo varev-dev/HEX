@@ -242,6 +242,69 @@ bool Board::findMove(Point* points, char color, char moves) {
     return false;
 }
 
+bool Board::reactMove(char color, char moves, char opponent) {
+    if (!opponent) {
+        auto* point = new Point[moves];
+        bool win = findMove(point, color, moves - 1);
+        fields[point[0].x][point[0].y] = ' ';
+        delete[] point;
+        return win;
+    }
+
+    for (char i = 0; i < empty_size; i++) {
+        if (fields[empty[i].x][empty[i].y] != ' ')
+            continue;
+
+        fields[empty[i].x][empty[i].y] = color;
+        bool win = predictMove(color, moves-1, opponent);
+        fields[empty[i].x][empty[i].y] = ' ';
+
+        if (win)
+            return true;
+    }
+
+    return false;
+}
+
+bool Board::predictMove(char color, char moves, char opponent) {
+    auto* points = new Point[opponent], * bp = new Point[opponent];
+    bool winnable;
+
+    if (opponent == 1) {
+        if (findMove(points, swapColor(color), opponent -1)) {
+            fields[points[0].x][points[0].y] = ' ';
+            return false;
+        }
+
+        if (!findMove(points, color, moves - 1)) {
+            return false;
+        }
+
+        fields[points[0].x][points[0].y] = swapColor(color);
+        winnable = findMove(bp, color, moves - 1);
+        fields[points[0].x][points[0].y] = ' ';
+
+        if (winnable) {
+            fields[bp[0].x][bp[0].y] = ' ';
+            return true;
+        }
+        return false;
+    }
+
+    for (char i = 0; i < empty_size; i++) {
+        if (fields[empty[i].x][empty[i].y] != ' ')
+            continue;
+
+        fields[empty[i].x][empty[i].y] = swapColor(color);
+        winnable = reactMove(color, moves, opponent - 1);
+        fields[empty[i].x][empty[i].y] = ' ';
+
+        if (!winnable)
+            return false;
+    }
+
+    return true;
+}
 
 bool Board::simulate(char color, char moves, Type type) {
     bool* win = isGameOver(false);
@@ -251,13 +314,12 @@ bool Board::simulate(char color, char moves, Type type) {
     if (!isCorrect() || gameOver)
         return false;
 
-    if (pawns_counter[color == 'b'] + moves < size || moves > size*size)
+    if (pawns_counter[color == 'b'] + moves < size)
         return false;
 
-    int opponent;
-    if (color == 'r') opponent = pawns_counter[RED] != pawns_counter[BLUE];
-    else opponent = pawns_counter[RED] == pawns_counter[BLUE];
-
+    char opponent;
+    if (color == 'r') opponent = (char) (pawns_counter[RED] != pawns_counter[BLUE]);
+    else opponent = (char) (pawns_counter[RED] == pawns_counter[BLUE]);
     opponent += moves-1;
 
     if (empty_size < opponent + moves)
@@ -271,21 +333,7 @@ bool Board::simulate(char color, char moves, Type type) {
         delete[] points;
 
         return output;
-    } else {
-        auto** winnable_paths = new Point*[opponent + 1];
-        winnable_paths[0] = new Point[moves];
-        char winnable_ctr = 0;
-
-        if (findMove(winnable_paths[0], swapColor(color), 0)) {
-            fields[(*winnable_paths)[0].x][(*winnable_paths)[0].y] = ' ';
-            delete[] winnable_paths[0];
-            delete[] winnable_paths;
-        }
-
-        while (winnable_ctr < opponent) {
-            winnable_ctr++;
-        }
     }
-
-    return false;
+    if (moves == opponent) return predictMove(color, moves, opponent);
+    else return reactMove(color, moves, opponent);
 }
